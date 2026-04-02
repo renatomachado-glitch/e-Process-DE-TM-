@@ -693,38 +693,47 @@ function clearSelection() {
   renderDetTable(recData);
 }
 
-// EXPORT EXCEL (CSV UTF-8 BOM — abre direto no Excel)
+// EXPORT EXCEL
 function exportToExcel() {
   const data = filtered();
   const recData = getRecurrentData(data);
   const display = selectedInt ? recData.filter(d => d.interessado === selectedInt) : recData;
   const sorted = [...display].sort((a, b) => b.dias - a.dias);
 
-  const BOM = '﻿';
-  const header = ['Nº Processo','Interessado','Data Inclusão','Data Trâmite','Dias','Status','Tipo Conclusão','Tipo Processo'];
-  const rows = sorted.map(d => [
-    d.numr,
-    d.interessado,
-    d.data_inclusao,
-    d.data_tramite,
-    d.dias,
-    d.status,
-    d.tipo_conclusao === 'nan' ? 'EM ANÁLISE' : d.tipo_conclusao,
-    d.tipo_processo
-  ]);
+  const header = ['Nr Processo','Interessado','Data Inclusao','Data Tramite','Dias','Status','Tipo Conclusao','Tipo Processo'];
+  const rows = sorted.map(function(d) {
+    return [
+      d.numr,
+      d.interessado,
+      d.data_inclusao,
+      d.data_tramite,
+      d.dias,
+      d.status,
+      d.tipo_conclusao === 'nan' ? 'EM ANALISE' : d.tipo_conclusao,
+      d.tipo_processo
+    ];
+  });
 
-  const csv = BOM + [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(';')).join('
-');
+  var csv = '\uFEFF';
+  csv += [header].concat(rows).map(function(r) {
+    return r.map(function(v) {
+      return '"' + String(v).replace(/"/g, '""') + '"';
+    }).join(';');
+  }).join('\r\n');
 
-  const now = new Date();
-  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-  const fname = `ITCD_MT_processos_${ts}.csv`;
+  var now = new Date();
+  var dd = String(now.getDate()).padStart(2,'0');
+  var mm = String(now.getMonth()+1).padStart(2,'0');
+  var yyyy = now.getFullYear();
+  var fname = 'ITCD_MT_processos_' + yyyy + mm + dd + '.csv';
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = fname;
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
 }
 
